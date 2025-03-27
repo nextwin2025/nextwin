@@ -1,54 +1,66 @@
 import * as Sentry from '@sentry/nextjs'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
-import LogRocket from "logrocket"
-import { config } from "./env"
+import { config } from "./config"
 
 // Initialize Sentry
-Sentry.init({
-  dsn: config.monitoring.sentry.dsn,
-  environment: config.monitoring.sentry.environment,
-  tracesSampleRate: config.monitoring.sentry.tracesSampleRate,
-  integrations: [
-    new Sentry.BrowserTracing({
-      tracePropagationTargets: ["localhost", /^https:\/\/yourdomain\.com/],
-    }),
-    new Sentry.Replay({
-      maskAllText: true,
-      blockAllMedia: true,
-    }),
-  ],
-})
-
-// Initialize LogRocket
-if (config.isProduction) {
-  LogRocket.init(config.monitoring.logrocket.appId)
+if (config.monitoring.sentry.dsn) {
+  Sentry.init({
+    dsn: config.monitoring.sentry.dsn,
+    environment: config.monitoring.sentry.environment,
+    tracesSampleRate: config.monitoring.sentry.tracesSampleRate,
+    integrations: [
+      new Sentry.BrowserTracing(),
+      new Sentry.Replay(),
+    ],
+  })
 }
 
-// Custom error tracking
-export const trackError = (error: Error, context?: Record<string, any>) => {
-  if (config.isProduction) {
-    Sentry.captureException(error, {
-      extra: context,
-    })
-    LogRocket.captureException(error)
-  } else {
-    console.error("Error:", error, context)
+// Initialize LogRocket
+if (config.monitoring.logrocket.appId) {
+  import('logrocket').then((LogRocket) => {
+    LogRocket.init(config.monitoring.logrocket.appId)
+  })
+}
+
+// Export monitoring components
+export const MonitoringComponents = () => {
+  return (
+    <>
+      <Analytics />
+      <SpeedInsights />
+    </>
+  )
+}
+
+// Error tracking
+export const trackError = (error: Error) => {
+  console.error('Error:', error)
+  
+  if (config.monitoring.sentry.dsn) {
+    Sentry.captureException(error)
   }
 }
 
-// Custom performance monitoring
-export const trackPerformance = (
-  name: string,
-  operation: () => Promise<any>
-) => {
-  const transaction = Sentry.startTransaction({
-    name,
-  })
+// Performance monitoring
+export const trackPerformance = (metric: string, value: number) => {
+  if (config.monitoring.sentry.dsn) {
+    Sentry.addBreadcrumb({
+      category: 'performance',
+      message: metric,
+      data: { value },
+    })
+  }
+}
 
-  return operation().finally(() => {
-    transaction.finish()
-  })
+// User tracking
+export const trackUser = (userId: string, traits?: Record<string, any>) => {
+  if (config.monitoring.sentry.dsn) {
+    Sentry.setUser({
+      id: userId,
+      ...traits,
+    })
+  }
 }
 
 // Custom analytics tracking
@@ -66,19 +78,6 @@ export const trackEvent = (
   } else {
     console.log("Event:", name, properties)
   }
-}
-
-// User context tracking
-export const setUserContext = (user: {
-  id: string
-  email: string
-  name?: string
-}) => {
-  Sentry.setUser({
-    id: user.id,
-    email: user.email,
-    username: user.name,
-  })
 }
 
 // Clear user context
@@ -137,11 +136,6 @@ export const measurePerformance = (name: string, startMark: string, endMark: str
   }
 }
 
-// Export monitoring components
-export { Analytics, SpeedInsights }
-
-export default Sentry 
-
 // Custom error class for application errors
 export class AppError extends Error {
   constructor(
@@ -152,7 +146,7 @@ export class AppError extends Error {
   ) {
     super(message)
     this.name = "AppError"
-    trackError(this, { code, statusCode, context })
+    trackError(this)
   }
 }
 
