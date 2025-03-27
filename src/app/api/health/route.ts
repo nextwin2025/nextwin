@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
-import { config } from "@/lib/config"
 
 export async function GET() {
   try {
@@ -26,9 +25,9 @@ export async function GET() {
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV,
       config: {
-        isProduction: config.isProduction,
-        isDevelopment: config.isDevelopment,
-        isTest: config.isTest,
+        isProduction: process.env.NODE_ENV === "production",
+        isDevelopment: process.env.NODE_ENV === "development",
+        isTest: process.env.NODE_ENV === "test",
       },
       metrics,
     })
