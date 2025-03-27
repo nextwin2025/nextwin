@@ -1,24 +1,21 @@
 import { NextResponse } from "next/server"
-import { Redis } from "@upstash/redis"
-import { config } from "@/lib/config"
 
-const redis = new Redis({
-  url: config.redis.url,
-  token: config.redis.token,
-})
+interface Alert {
+  type: string
+  message: string
+  severity: string
+  timestamp: string
+}
+
+// In-memory storage for development
+let alerts: Alert[] = []
 
 export async function GET() {
   try {
-    // Check Redis connection
-    await redis.ping()
-
-    // Get alerts from Redis
-    const alerts = await redis.lrange("alerts", 0, -1)
-
     return NextResponse.json({
       status: "healthy",
       timestamp: new Date().toISOString(),
-      alerts: alerts.map((alert) => JSON.parse(alert)),
+      alerts,
     })
   } catch (error) {
     console.error("Failed to fetch alerts:", error)
@@ -48,16 +45,14 @@ export async function POST(request: Request) {
       )
     }
 
-    const alert = {
+    const alert: Alert = {
       type,
       message,
       severity,
       timestamp: new Date().toISOString(),
     }
 
-    // Store alert in Redis
-    await redis.lpush("alerts", JSON.stringify(alert))
-    await redis.ltrim("alerts", 0, 99) // Keep only last 100 alerts
+    alerts = [alert, ...alerts].slice(0, 100) // Keep only last 100 alerts
 
     return NextResponse.json({
       status: "success",

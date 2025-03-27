@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server"
-import { Redis } from "@upstash/redis"
-import { config } from "@/lib/config"
 
 interface Metrics {
   requests: number
@@ -10,33 +8,17 @@ interface Metrics {
   timestamp: string
 }
 
-const redis = new Redis({
-  url: config.redis.url,
-  token: config.redis.token,
-})
+// In-memory storage for development
+let metrics: Metrics = {
+  requests: 0,
+  errors: 0,
+  latency: 0,
+  uptime: process.uptime(),
+  timestamp: new Date().toISOString(),
+}
 
 export async function GET() {
   try {
-    // Check Redis connection
-    await redis.ping()
-
-    // Get metrics from Redis
-    const metricsData = await redis.get<string>("monitoring:metrics")
-    if (!metricsData) {
-      return NextResponse.json({
-        status: "healthy",
-        timestamp: new Date().toISOString(),
-        metrics: {
-          requests: 0,
-          errors: 0,
-          latency: 0,
-          uptime: process.uptime(),
-        },
-      })
-    }
-
-    const metrics: Metrics = JSON.parse(metricsData)
-
     return NextResponse.json({
       status: "healthy",
       timestamp: new Date().toISOString(),
@@ -60,16 +42,13 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { requests, errors, latency } = body
 
-    const metrics: Metrics = {
+    metrics = {
       requests: requests || 0,
       errors: errors || 0,
       latency: latency || 0,
       uptime: process.uptime(),
       timestamp: new Date().toISOString(),
     }
-
-    // Store metrics in Redis
-    await redis.set("monitoring:metrics", JSON.stringify(metrics))
 
     return NextResponse.json({
       status: "success",
