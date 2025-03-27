@@ -2,6 +2,14 @@ import { NextResponse } from "next/server"
 import { Redis } from "@upstash/redis"
 import { config } from "@/lib/config"
 
+interface Metrics {
+  requests: number
+  errors: number
+  latency: number
+  uptime: number
+  timestamp: string
+}
+
 const redis = new Redis({
   url: config.redis.url,
   token: config.redis.token,
@@ -13,8 +21,8 @@ export async function GET() {
     await redis.ping()
 
     // Get metrics from Redis
-    const metrics = await redis.get("monitoring:metrics")
-    if (!metrics) {
+    const metricsData = await redis.get<string>("monitoring:metrics")
+    if (!metricsData) {
       return NextResponse.json({
         status: "healthy",
         timestamp: new Date().toISOString(),
@@ -27,10 +35,12 @@ export async function GET() {
       })
     }
 
+    const metrics: Metrics = JSON.parse(metricsData)
+
     return NextResponse.json({
       status: "healthy",
       timestamp: new Date().toISOString(),
-      metrics: JSON.parse(metrics),
+      metrics,
     })
   } catch (error) {
     console.error("Failed to fetch metrics:", error)
@@ -50,7 +60,7 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { requests, errors, latency } = body
 
-    const metrics = {
+    const metrics: Metrics = {
       requests: requests || 0,
       errors: errors || 0,
       latency: latency || 0,
