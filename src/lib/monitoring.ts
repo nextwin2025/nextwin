@@ -20,7 +20,9 @@ if (config.monitoring.sentry.dsn) {
 // Initialize LogRocket
 if (config.monitoring.logrocket.appId) {
   import('logrocket').then((LogRocket) => {
-    LogRocket.init(config.monitoring.logrocket.appId)
+    if (config.monitoring.logrocket.appId) {
+      LogRocket.init(config.monitoring.logrocket.appId)
+    }
   })
 }
 
@@ -34,12 +36,19 @@ export function MonitoringComponents(): ReactNode {
   )
 }
 
-// Error tracking
-export const trackError = (error: Error) => {
-  console.error('Error:', error)
+// Error tracking with context
+export const trackError = (error: Error, context?: Record<string, any>) => {
+  console.error('Error:', error, context)
   
   if (config.monitoring.sentry.dsn) {
-    Sentry.captureException(error)
+    Sentry.withScope((scope) => {
+      if (context) {
+        Object.entries(context).forEach(([key, value]) => {
+          scope.setExtra(key, value)
+        })
+      }
+      Sentry.captureException(error)
+    })
   }
 }
 

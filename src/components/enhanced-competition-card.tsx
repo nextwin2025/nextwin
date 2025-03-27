@@ -2,9 +2,9 @@ import { motion } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Clock, Users, DollarSign, Trophy } from "lucide-react"
+import { Trophy, DollarSign, Clock, Users } from "lucide-react"
 
-interface CompetitionCardProps {
+interface EnhancedCompetitionCardProps {
   id: string
   name: string
   sport: string
@@ -25,17 +25,17 @@ export default function EnhancedCompetitionCard({
   matches,
   deadline,
   status,
-}: CompetitionCardProps) {
+}: EnhancedCompetitionCardProps) {
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case "hot":
-        return "bg-cta text-white"
+        return "bg-cta"
       case "live":
-        return "bg-success text-white"
+        return "bg-success"
       case "new":
-        return "bg-primary text-white"
+        return "bg-primary"
       default:
-        return "bg-gray-500 text-white"
+        return "bg-gray-500"
     }
   }
 
@@ -46,66 +46,57 @@ export default function EnhancedCompetitionCard({
     >
       <Card className="relative overflow-hidden">
         <div className="absolute top-0 right-0">
-          <Badge className={getStatusColor(status)}>
+          <Badge className={`${getStatusColor(status)} text-white`}>
             {status}
           </Badge>
         </div>
         
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span>{name}</span>
-            <span className="text-sm font-normal text-muted-foreground">
-              {sport}
-            </span>
+          <CardTitle className="flex items-center">
+            <Trophy className="h-5 w-5 text-gold mr-2" />
+            {name}
           </CardTitle>
         </CardHeader>
         
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex items-center space-x-2">
-              <DollarSign className="h-4 w-4 text-success" />
-              <div>
-                <p className="text-sm text-muted-foreground">Entry Fee</p>
-                <p className="font-semibold">{entryFee}</p>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center text-gray-600 dark:text-gray-300">
+                <DollarSign className="h-4 w-4 mr-1" />
+                <span>Entry:</span>
               </div>
+              <span className="font-semibold">{entryFee}</span>
             </div>
-            <div className="flex items-center space-x-2">
-              <Trophy className="h-4 w-4 text-gold" />
-              <div>
-                <p className="text-sm text-muted-foreground">Prize Pool</p>
-                <p className="font-semibold">{prizePool}</p>
+            
+            <div className="flex justify-between items-center">
+              <div className="flex items-center text-gray-600 dark:text-gray-300">
+                <Trophy className="h-4 w-4 mr-1" />
+                <span>Prize Pool:</span>
               </div>
+              <span className="font-semibold text-success">{prizePool}</span>
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex items-center space-x-2">
-              <Users className="h-4 w-4 text-primary" />
-              <div>
-                <p className="text-sm text-muted-foreground">Entries</p>
-                <p className="font-semibold">{entries}</p>
+            
+            <div className="flex justify-between items-center">
+              <div className="flex items-center text-gray-600 dark:text-gray-300">
+                <Users className="h-4 w-4 mr-1" />
+                <span>Entries:</span>
               </div>
+              <span className="font-semibold">{entries}</span>
             </div>
-            <div className="flex items-center space-x-2">
-              <Clock className="h-4 w-4 text-orange" />
-              <div>
-                <p className="text-sm text-muted-foreground">Matches</p>
-                <p className="font-semibold">{matches}</p>
+            
+            <div className="flex justify-between items-center">
+              <div className="flex items-center text-gray-600 dark:text-gray-300">
+                <Clock className="h-4 w-4 mr-1" />
+                <span>Deadline:</span>
               </div>
+              <span className="font-semibold text-orange">{deadline}</span>
             </div>
-          </div>
-
-          <div className="pt-4 border-t">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-2">
-                <Clock className="h-4 w-4 text-orange" />
-                <span className="text-sm text-muted-foreground">Deadline:</span>
-                <span className="text-sm font-medium">{deadline}</span>
-              </div>
+            
+            <div className="pt-4 border-t">
+              <Button className="w-full bg-gradient-to-r from-gradient-premium-start to-gradient-premium-end text-white">
+                Enter Competition
+              </Button>
             </div>
-            <Button className="w-full bg-cta hover:bg-cta-600 text-white">
-              Enter Competition
-            </Button>
           </div>
         </CardContent>
       </Card>

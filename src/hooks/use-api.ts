@@ -59,8 +59,9 @@ export function useApi<T>() {
 
           if (!result.ok) {
             throw new AppError(
-              result.status,
-              result.statusText || "An error occurred"
+              result.statusText || "An error occurred",
+              "API_ERROR",
+              result.status
             )
           }
 
@@ -77,7 +78,11 @@ export function useApi<T>() {
         setData(responseData)
         onSuccess?.(responseData)
       } catch (err) {
-        const appError = err instanceof AppError ? err : new AppError(500, "An unexpected error occurred")
+        const appError = err instanceof AppError ? err : new AppError(
+          "An unexpected error occurred",
+          "INTERNAL_ERROR",
+          500
+        )
         setError(appError)
         trackError(appError, { url, options })
         onError?.(appError)
@@ -102,23 +107,26 @@ export function useApi<T>() {
       setError(null)
 
       try {
-        const response = await trackPerformance("api_mutation", async () =>
-          fetch(url, {
+        const response = await trackPerformance("api_mutation", async () => {
+          const result = await fetch(url, {
             method,
             headers: {
               "Content-Type": "application/json",
             },
             body: JSON.stringify(body),
           })
-        )
 
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new AppError(
-            response.status,
-            errorData.message || "An error occurred"
-          )
-        }
+          if (!result.ok) {
+            const errorData = await result.json()
+            throw new AppError(
+              errorData.message || "An error occurred",
+              "API_ERROR",
+              result.status
+            )
+          }
+
+          return result
+        })
 
         const responseData = await response.json()
 
@@ -130,7 +138,11 @@ export function useApi<T>() {
         setData(responseData)
         onSuccess?.(responseData)
       } catch (err) {
-        const appError = err instanceof AppError ? err : new AppError(500, "An unexpected error occurred")
+        const appError = err instanceof AppError ? err : new AppError(
+          "An unexpected error occurred",
+          "INTERNAL_ERROR",
+          500
+        )
         setError(appError)
         trackError(appError, { url, method, body })
         onError?.(appError)
