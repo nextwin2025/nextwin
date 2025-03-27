@@ -2,6 +2,7 @@ import * as Sentry from '@sentry/nextjs'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { config } from "./config"
+import type { ReactNode } from 'react'
 
 // Initialize Sentry
 if (config.monitoring.sentry.dsn) {
@@ -24,7 +25,7 @@ if (config.monitoring.logrocket.appId) {
 }
 
 // Export monitoring components
-export const MonitoringComponents = () => {
+export function MonitoringComponents(): ReactNode {
   return (
     <>
       <Analytics />
@@ -42,14 +43,35 @@ export const trackError = (error: Error) => {
   }
 }
 
-// Performance monitoring
-export const trackPerformance = (metric: string, value: number) => {
-  if (config.monitoring.sentry.dsn) {
-    Sentry.addBreadcrumb({
-      category: 'performance',
-      message: metric,
-      data: { value },
-    })
+// Performance monitoring with async support
+export const trackPerformance = async <T>(
+  metric: string,
+  fn: () => Promise<T>
+): Promise<T> => {
+  const start = performance.now()
+  try {
+    const result = await fn()
+    const duration = performance.now() - start
+    
+    if (config.monitoring.sentry.dsn) {
+      Sentry.addBreadcrumb({
+        category: 'performance',
+        message: metric,
+        data: { duration },
+      })
+    }
+    
+    return result
+  } catch (error) {
+    const duration = performance.now() - start
+    if (config.monitoring.sentry.dsn) {
+      Sentry.addBreadcrumb({
+        category: 'performance',
+        message: `${metric}_error`,
+        data: { duration, error },
+      })
+    }
+    throw error
   }
 }
 
@@ -74,7 +96,7 @@ export const trackEvent = (
       message: name,
       data: properties,
     })
-    LogRocket.track(name, properties)
+    // LogRocket tracking is handled by the LogRocket component
   } else {
     console.log("Event:", name, properties)
   }
@@ -83,57 +105,6 @@ export const trackEvent = (
 // Clear user context
 export const clearUserContext = () => {
   Sentry.setUser(null)
-}
-
-// Performance monitoring
-export const trackPerformanceMetric = (metric: string, value: number) => {
-  if (process.env.NODE_ENV === 'production') {
-    // Send to analytics
-    Analytics.track(metric, value)
-    
-    // Send to Sentry
-    Sentry.addBreadcrumb({
-      category: 'performance',
-      message: `${metric}: ${value}ms`,
-      level: 'info',
-    })
-  }
-}
-
-// User action tracking
-export const trackUserAction = (action: string, properties?: Record<string, any>) => {
-  if (process.env.NODE_ENV === 'production') {
-    Analytics.track(action, properties)
-  }
-}
-
-// Page view tracking
-export const trackPageView = (url: string) => {
-  if (process.env.NODE_ENV === 'production') {
-    Analytics.track('page_view', { url })
-  }
-}
-
-// Custom performance mark
-export const markPerformance = (name: string) => {
-  if (process.env.NODE_ENV === 'production') {
-    performance.mark(name)
-  }
-}
-
-// Custom performance measure
-export const measurePerformance = (name: string, startMark: string, endMark: string) => {
-  if (process.env.NODE_ENV === 'production') {
-    try {
-      performance.measure(name, startMark, endMark)
-      const entries = performance.getEntriesByName(name)
-      if (entries.length > 0) {
-        trackPerformanceMetric(name, entries[0].duration)
-      }
-    } catch (error) {
-      console.error('Performance measurement failed:', error)
-    }
-  }
 }
 
 // Custom error class for application errors

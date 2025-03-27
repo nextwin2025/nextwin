@@ -2,12 +2,14 @@ import { useState, useCallback } from "react"
 import { getCachedData, setCachedData } from "@/lib/redis"
 import { trackError, trackPerformance } from "@/lib/monitoring"
 import { AppError } from "@/lib/errors"
+import { config } from '@/lib/config'
 
 interface UseApiOptions<T> {
   cacheKey?: string
   cacheDuration?: number
   onSuccess?: (data: T) => void
   onError?: (error: AppError) => void
+  onLoading?: (loading: boolean) => void
 }
 
 export function useApi<T>() {
@@ -26,6 +28,7 @@ export function useApi<T>() {
         cacheDuration = 3600,
         onSuccess,
         onError,
+        onLoading,
       } = apiOptions
 
       setLoading(true)
@@ -39,28 +42,30 @@ export function useApi<T>() {
             setData(cachedData)
             onSuccess?.(cachedData)
             setLoading(false)
+            onLoading?.(false)
             return
           }
         }
 
-        // Perform the API request
-        const response = await trackPerformance("api_request", async () =>
-          fetch(url, {
+        // Perform the API request with performance tracking
+        const response = await trackPerformance("api_request", async () => {
+          const result = await fetch(url, {
             ...options,
             headers: {
               "Content-Type": "application/json",
               ...options.headers,
             },
           })
-        )
 
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new AppError(
-            response.status,
-            errorData.message || "An error occurred"
-          )
-        }
+          if (!result.ok) {
+            throw new AppError(
+              result.status,
+              result.statusText || "An error occurred"
+            )
+          }
+
+          return result
+        })
 
         const responseData = await response.json()
 
@@ -78,6 +83,7 @@ export function useApi<T>() {
         onError?.(appError)
       } finally {
         setLoading(false)
+        onLoading?.(false)
       }
     },
     []
