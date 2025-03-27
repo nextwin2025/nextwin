@@ -112,4 +112,7 @@ export function isValidPrediction(prediction: number): {
     }
   }
 
+  return { isValid: true }
+}
+
  
