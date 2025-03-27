@@ -1,11 +1,15 @@
 import { Loader2, Trophy, Edit, Target, Users, Medal } from "lucide-react";
 
-export function GoogleIcon() {
+interface IconProps {
+  className?: string
+}
+
+export function GoogleIcon({ className }: IconProps) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 48 48"
-      className="w-5 h-5"
+      className={className || "w-5 h-5"}
     >
       <path
         fill="#FFC107"
@@ -25,10 +29,6 @@ export function GoogleIcon() {
       />
     </svg>
   );
-}
-
-interface IconProps {
-  className?: string
 }
 
 export function LoaderIcon({ className }: IconProps) {
