@@ -59,9 +59,8 @@ export function useApi<T>() {
 
           if (!result.ok) {
             throw new AppError(
-              result.statusText || "An error occurred",
-              "API_ERROR",
-              result.status
+              result.status,
+              result.statusText || "An error occurred"
             )
           }
 
@@ -79,9 +78,8 @@ export function useApi<T>() {
         onSuccess?.(responseData)
       } catch (err) {
         const appError = err instanceof AppError ? err : new AppError(
-          "An unexpected error occurred",
-          "INTERNAL_ERROR",
-          500
+          500,
+          "An unexpected error occurred"
         )
         setError(appError)
         trackError(appError, { url, options })
@@ -119,9 +117,8 @@ export function useApi<T>() {
           if (!result.ok) {
             const errorData = await result.json()
             throw new AppError(
-              errorData.message || "An error occurred",
-              "API_ERROR",
-              result.status
+              result.status,
+              errorData.message || "An error occurred"
             )
           }
 
@@ -139,9 +136,8 @@ export function useApi<T>() {
         onSuccess?.(responseData)
       } catch (err) {
         const appError = err instanceof AppError ? err : new AppError(
-          "An unexpected error occurred",
-          "INTERNAL_ERROR",
-          500
+          500,
+          "An unexpected error occurred"
         )
         setError(appError)
         trackError(appError, { url, method, body })
