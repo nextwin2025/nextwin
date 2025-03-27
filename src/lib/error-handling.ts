@@ -64,19 +64,25 @@ export const asyncHandler = (fn: Function) => {
 }
 
 // API error response helper
-export const sendErrorResponse = (res: Response, statusCode: number, message: string) => {
-  res.status(statusCode).json({
-    success: false,
-    error: message,
-  })
+export const sendErrorResponse = (statusCode: number, message: string) => {
+  return NextResponse.json(
+    {
+      success: false,
+      error: message,
+    },
+    { status: statusCode }
+  )
 }
 
 // API success response helper
-export const sendSuccessResponse = (res: Response, data: any, statusCode = 200) => {
-  res.status(statusCode).json({
-    success: true,
-    data,
-  })
+export const sendSuccessResponse = (data: any, statusCode = 200) => {
+  return NextResponse.json(
+    {
+      success: true,
+      data,
+    },
+    { status: statusCode }
+  )
 }
 
 // Validation error helper
