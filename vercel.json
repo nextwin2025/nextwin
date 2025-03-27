@@ -8,7 +8,6 @@
   "env": {
     "NEXT_PUBLIC_APP_URL": "https://nextwin.vercel.app",
     "NEXTAUTH_URL": "https://nextwin.vercel.app",
-    "NEXTAUTH_SECRET": "@nextauth_secret",
     "DATABASE_URL": "@database_url",
     "POSTGRES_URL": "@postgres_url",
     "POSTGRES_PRISMA_URL": "@postgres_prisma_url",
