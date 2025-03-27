@@ -38,37 +38,9 @@ const FormControl = React.forwardRef<
 ))
 FormControl.displayName = FormPrimitive.Control.displayName
 
-const FormDescription = React.forwardRef<
-  React.ElementRef<typeof FormPrimitive.Description>,
-  React.ComponentPropsWithoutRef<typeof FormPrimitive.Description>
->(({ className, ...props }, ref) => (
-  <FormPrimitive.Description
-    ref={ref}
-    className={cn("text-sm text-muted-foreground", className)}
-    {...props}
-  />
-))
-FormDescription.displayName = FormPrimitive.Description.displayName
-
-const FormMessage = React.forwardRef<
-  React.ElementRef<typeof FormPrimitive.Message>,
-  React.ComponentPropsWithoutRef<typeof FormPrimitive.Message>
->(({ className, children, ...props }, ref) => (
-  <FormPrimitive.Message
-    ref={ref}
-    className={cn("text-sm font-medium text-destructive", className)}
-    {...props}
-  >
-    {children}
-  </FormPrimitive.Message>
-))
-FormMessage.displayName = FormPrimitive.Message.displayName
-
 export {
   Form,
   FormField,
   FormLabel,
   FormControl,
-  FormDescription,
-  FormMessage,
 } 
