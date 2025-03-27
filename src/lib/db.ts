@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, Prisma } from '@prisma/client'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
@@ -40,7 +40,7 @@ export const handleDatabaseError = (error: any) => {
 
 // Transaction helper
 export const withTransaction = async <T>(
-  callback: (prisma: PrismaClient) => Promise<T>
+  callback: (tx: Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>) => Promise<T>
 ): Promise<T> => {
   return prisma.$transaction(async (tx) => {
     return callback(tx)
@@ -66,5 +66,5 @@ export const disconnectDatabase = async () => {
 // Export types
 export type PrismaTransaction = Omit<
   PrismaClient,
-  '$connect' | '$disconnect' | '$on' | '$transaction' | '$use'
+  '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
 > 
