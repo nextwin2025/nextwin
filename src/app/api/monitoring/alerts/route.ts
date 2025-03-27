@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server"
 
 interface Alert {
-  type: string
-  message: string
-  severity: string
+  id: string
+  type: "default" | "destructive"
+  title: string
+  description: string
   timestamp: string
 }
 
@@ -33,9 +34,9 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { type, message, severity = "info" } = body
+    const { type, title, description } = body
 
-    if (!type || !message) {
+    if (!type || !title || !description) {
       return NextResponse.json(
         {
           status: "error",
@@ -46,9 +47,10 @@ export async function POST(request: Request) {
     }
 
     const alert: Alert = {
-      type,
-      message,
-      severity,
+      id: Math.random().toString(36).substring(7),
+      type: type === "error" ? "destructive" : "default",
+      title,
+      description,
       timestamp: new Date().toISOString(),
     }
 

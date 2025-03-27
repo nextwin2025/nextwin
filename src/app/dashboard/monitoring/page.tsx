@@ -1,64 +1,60 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Card } from "@/components/ui/card"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AlertCircle, CheckCircle, Clock, Activity } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
+import { AlertCircle } from "lucide-react"
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 
-interface Metric {
-  name: string
-  value: number
+interface Metrics {
+  requests: number
+  errors: number
+  latency: number
+  uptime: number
   timestamp: string
 }
 
 interface Alert {
   id: string
-  type: "error" | "warning" | "info"
+  type: "default" | "destructive"
   title: string
   description: string
   timestamp: string
 }
 
-export default function MonitoringDashboard() {
-  const [metrics, setMetrics] = useState<Metric[]>([])
+export default function MonitoringPage() {
+  const [metrics, setMetrics] = useState<Metrics | null>(null)
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const fetchMetrics = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetch("/api/monitoring/metrics")
-        const data = await response.json()
-        setMetrics(data)
+        const [metricsRes, alertsRes] = await Promise.all([
+          fetch("/api/monitoring/metrics"),
+          fetch("/api/monitoring/alerts"),
+        ])
+
+        if (!metricsRes.ok || !alertsRes.ok) {
+          throw new Error("Failed to fetch monitoring data")
+        }
+
+        const metricsData = await metricsRes.json()
+        const alertsData = await alertsRes.json()
+
+        setMetrics(metricsData.metrics)
+        setAlerts(alertsData.alerts)
       } catch (error) {
-        console.error("Error fetching metrics:", error)
+        console.error("Error fetching monitoring data:", error)
       } finally {
         setLoading(false)
       }
     }
 
-    const fetchAlerts = async () => {
-      try {
-        const response = await fetch("/api/monitoring/alerts")
-        const data = await response.json()
-        setAlerts(data)
-      } catch (error) {
-        console.error("Error fetching alerts:", error)
-      }
-    }
+    fetchData()
+    const interval = setInterval(fetchData, 30000) // Refresh every 30 seconds
 
-    fetchMetrics()
-    fetchAlerts()
-
-    // Set up polling
-    const metricsInterval = setInterval(fetchMetrics, 60000) // Every minute
-    const alertsInterval = setInterval(fetchAlerts, 30000) // Every 30 seconds
-
-    return () => {
-      clearInterval(metricsInterval)
-      clearInterval(alertsInterval)
-    }
+    return () => clearInterval(interval)
   }, [])
 
   if (loading) {
@@ -66,77 +62,81 @@ export default function MonitoringDashboard() {
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Monitoring Dashboard</h1>
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold">Monitoring Dashboard</h1>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card className="p-4">
-          <div className="flex items-center">
-            <Activity className="w-6 h-6 text-blue-500 mr-2" />
-            <div>
-              <p className="text-sm text-gray-500">Active Users</p>
-              <p className="text-2xl font-bold">{metrics.find(m => m.name === "activeUsers")?.value || 0}</p>
-            </div>
-          </div>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Requests</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{metrics?.requests || 0}</div>
+          </CardContent>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center">
-            <Clock className="w-6 h-6 text-green-500 mr-2" />
-            <div>
-              <p className="text-sm text-gray-500">Response Time</p>
-              <p className="text-2xl font-bold">{metrics.find(m => m.name === "responseTime")?.value || 0}ms</p>
-            </div>
-          </div>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Errors</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{metrics?.errors || 0}</div>
+          </CardContent>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center">
-            <CheckCircle className="w-6 h-6 text-yellow-500 mr-2" />
-            <div>
-              <p className="text-sm text-gray-500">Success Rate</p>
-              <p className="text-2xl font-bold">{metrics.find(m => m.name === "successRate")?.value || 0}%</p>
-            </div>
-          </div>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Average Latency</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{metrics?.latency || 0}ms</div>
+          </CardContent>
         </Card>
-        <Card className="p-4">
-          <div className="flex items-center">
-            <AlertCircle className="w-6 h-6 text-red-500 mr-2" />
-            <div>
-              <p className="text-sm text-gray-500">Error Rate</p>
-              <p className="text-2xl font-bold">{metrics.find(m => m.name === "errorRate")?.value || 0}%</p>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Uptime</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {metrics?.uptime ? Math.floor(metrics.uptime / 3600) : 0}h
             </div>
-          </div>
+          </CardContent>
         </Card>
       </div>
 
-      {/* Performance Chart */}
-      <Card className="p-4 mb-6">
-        <h2 className="text-lg font-semibold mb-4">Response Time Trend</h2>
-        <div className="h-[300px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={metrics.filter(m => m.name === "responseTime")}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="timestamp" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="value" stroke="#8884d8" name="Response Time (ms)" />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Request Rate</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={[{ name: "Now", requests: metrics?.requests || 0 }]}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Line type="monotone" dataKey="requests" stroke="#8884d8" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
       </Card>
 
-      {/* Alerts */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold">Active Alerts</h2>
-        {alerts.map((alert) => (
-          <Alert key={alert.id} variant={alert.type}>
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>{alert.title}</AlertTitle>
-            <AlertDescription>{alert.description}</AlertDescription>
-          </Alert>
-        ))}
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Active Alerts</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {alerts.map((alert) => (
+              <Alert key={alert.id} variant={alert.type}>
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>{alert.title}</AlertTitle>
+                <AlertDescription>{alert.description}</AlertDescription>
+              </Alert>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 } 
