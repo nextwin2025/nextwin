@@ -1,6 +1,6 @@
 import { useSession, signIn, signOut } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import { useCallback, useEffect } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { trackError, setUserContext, clearUserContext } from "@/lib/monitoring"
 import { AuthenticationError } from "@/lib/errors"
 
@@ -13,15 +13,27 @@ interface RegisterData extends LoginCredentials {
   name: string
 }
 
+interface UserContext {
+  id: string
+  email: string
+  name: string | null | undefined
+  isAuthenticated: boolean
+}
+
 export function useAuth() {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const [userContext, setUserContext] = useState<UserContext>({
+    id: "",
+    email: "",
+    name: undefined,
+    isAuthenticated: false,
+  })
 
   const login = useCallback(
-    async (credentials: LoginCredentials) => {
+    async (provider: string) => {
       try {
-        const result = await signIn("credentials", {
-          ...credentials,
+        const result = await signIn(provider, {
           redirect: false,
         })
 
@@ -29,108 +41,24 @@ export function useAuth() {
           throw new AuthenticationError(result.error)
         }
 
-        if (result?.ok) {
-          router.push("/dashboard")
-        }
+        router.push("/dashboard")
       } catch (error) {
-        trackError(error as Error)
+        trackError(error)
         throw error
       }
     },
     [router]
-  )
-
-  const register = useCallback(
-    async (data: RegisterData) => {
-      try {
-        const response = await fetch("/api/auth/register", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(data),
-        })
-
-        if (!response.ok) {
-          const error = await response.json()
-          throw new AuthenticationError(error.message)
-        }
-
-        // After successful registration, log the user in
-        await login({
-          email: data.email,
-          password: data.password,
-        })
-      } catch (error) {
-        trackError(error as Error)
-        throw error
-      }
-    },
-    [login]
   )
 
   const logout = useCallback(async () => {
     try {
       await signOut({ redirect: false })
-      clearUserContext()
       router.push("/")
     } catch (error) {
-      trackError(error as Error)
+      trackError(error)
       throw error
     }
   }, [router])
-
-  const updateProfile = useCallback(
-    async (data: { name?: string; email?: string }) => {
-      try {
-        const response = await fetch("/api/user/profile", {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(data),
-        })
-
-        if (!response.ok) {
-          const error = await response.json()
-          throw new Error(error.message)
-        }
-
-        // Refresh the session to get updated user data
-        router.refresh()
-      } catch (error) {
-        trackError(error as Error)
-        throw error
-      }
-    },
-    [router]
-  )
-
-  const changePassword = useCallback(
-    async (data: {
-      currentPassword: string
-      newPassword: string
-    }) => {
-      try {
-        const response = await fetch("/api/user/password", {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(data),
-        })
-
-        if (!response.ok) {
-          const error = await response.json()
-          throw new Error(error.message)
-        }
-      } catch (error) {
-        trackError(error as Error)
-        throw error
-      }
-    },
-    []
-  )
 
   // Set user context in monitoring when session changes
   useEffect(() => {
@@ -138,7 +66,8 @@ export function useAuth() {
       setUserContext({
         id: session.user.id,
         email: session.user.email!,
-        name: session.user.name,
+        name: session.user.name || undefined,
+        isAuthenticated: true,
       })
     } else {
       clearUserContext()
@@ -146,13 +75,10 @@ export function useAuth() {
   }, [session])
 
   return {
-    user: session?.user,
-    isAuthenticated: status === "authenticated",
+    user: userContext,
+    isAuthenticated: userContext.isAuthenticated,
     isLoading: status === "loading",
     login,
-    register,
     logout,
-    updateProfile,
-    changePassword,
   }
 } 
