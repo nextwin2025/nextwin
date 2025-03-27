@@ -7,27 +7,43 @@ const globalForPrisma = globalThis as unknown as {
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    log: ["query"],
+    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+    datasources: {
+      db: {
+        url: process.env.DATABASE_URL,
+      },
+    },
   })
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma
 
 // Database connection error handler
-export const handleDatabaseError = (error: any) => {
+export const handleDatabaseError = (error: unknown) => {
   console.error('Database error:', error)
   
-  // Handle specific database errors
-  if (error.code === 'P2002') {
-    return {
-      statusCode: 409,
-      message: 'A record with this unique field already exists',
-    }
-  }
-  
-  if (error.code === 'P2025') {
-    return {
-      statusCode: 404,
-      message: 'Record not found',
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    // Handle specific database errors
+    switch (error.code) {
+      case 'P2002':
+        return {
+          statusCode: 409,
+          message: 'A record with this unique field already exists',
+        }
+      case 'P2025':
+        return {
+          statusCode: 404,
+          message: 'Record not found',
+        }
+      case 'P1001':
+        return {
+          statusCode: 503,
+          message: 'Database connection failed',
+        }
+      default:
+        return {
+          statusCode: 500,
+          message: 'An unexpected database error occurred',
+        }
     }
   }
 
@@ -60,7 +76,11 @@ export const checkDatabaseConnection = async () => {
 
 // Graceful shutdown
 export const disconnectDatabase = async () => {
-  await prisma.$disconnect()
+  try {
+    await prisma.$disconnect()
+  } catch (error) {
+    console.error('Error disconnecting from database:', error)
+  }
 }
 
 // Export types
