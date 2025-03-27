@@ -1,3 +1,4 @@
+import { NextRequest, NextResponse } from "next/server"
 import * as Sentry from '@sentry/nextjs'
 
 export class AppError extends Error {
@@ -12,31 +13,53 @@ export class AppError extends Error {
 }
 
 export const handleError = (error: unknown) => {
+  console.error("Error:", error)
+
   if (error instanceof AppError) {
     // Log operational errors to Sentry
     if (!error.isOperational) {
       Sentry.captureException(error)
     }
-    return {
-      statusCode: error.statusCode,
-      message: error.message,
-      isOperational: error.isOperational,
-    }
+    return NextResponse.json(
+      {
+        status: "error",
+        message: error.message,
+      },
+      { status: error.statusCode }
+    )
+  }
+
+  if (error instanceof Error) {
+    // Log unknown errors to Sentry
+    Sentry.captureException(error)
+    return NextResponse.json(
+      {
+        status: "error",
+        message: error.message,
+      },
+      { status: 500 }
+    )
   }
 
   // Log unknown errors to Sentry
   Sentry.captureException(error)
 
-  return {
-    statusCode: 500,
-    message: 'An unexpected error occurred',
-    isOperational: false,
-  }
+  return NextResponse.json(
+    {
+      status: "error",
+      message: "An unexpected error occurred",
+    },
+    { status: 500 }
+  )
 }
 
 export const asyncHandler = (fn: Function) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(next)
+  return async (req: NextRequest) => {
+    try {
+      return await fn(req)
+    } catch (error) {
+      return handleError(error)
+    }
   }
 }
 
