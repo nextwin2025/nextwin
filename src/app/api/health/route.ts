@@ -1,35 +1,34 @@
 import { NextResponse } from "next/server"
-import { Redis } from "@upstash/redis"
-import { config } from "@/lib/env"
-
-const redis = new Redis({
-  url: config.redis.url,
-  token: config.redis.token,
-})
+import { prisma } from "@/lib/db"
+import { config } from "@/lib/config"
 
 export async function GET() {
   try {
-    // Check Redis connection
-    await redis.ping()
-
     // Check database connection
-    const dbStatus = await fetch(`${config.api.baseUrl}/api/db/status`).then(
-      (res) => res.ok
-    )
+    await prisma.$queryRaw`SELECT 1`
 
-    // Get system metrics
+    // Get database metrics
     const metrics = {
-      uptime: process.uptime(),
-      memory: process.memoryUsage(),
-      cpu: process.cpuUsage(),
+      connections: await prisma.$queryRaw`
+        SELECT count(*) as count
+        FROM pg_stat_activity
+        WHERE datname = current_database()
+      `,
+      tables: await prisma.$queryRaw`
+        SELECT count(*) as count
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
+      `,
     }
 
     return NextResponse.json({
       status: "healthy",
       timestamp: new Date().toISOString(),
-      services: {
-        redis: "connected",
-        database: dbStatus ? "connected" : "disconnected",
+      environment: process.env.NODE_ENV,
+      config: {
+        isProduction: config.isProduction,
+        isDevelopment: config.isDevelopment,
+        isTest: config.isTest,
       },
       metrics,
     })
