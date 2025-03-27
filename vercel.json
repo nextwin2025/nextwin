@@ -8,5 +8,17 @@
   "env": {
     "NEXT_PUBLIC_APP_URL": "https://nextwin.vercel.app",
     "NEXTAUTH_URL": "https://nextwin.vercel.app"
+  },
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "build": {
+    "env": {
+      "NEXT_PUBLIC_APP_URL": "https://nextwin.vercel.app",
+      "NEXTAUTH_URL": "https://nextwin.vercel.app"
+    }
   }
 } 

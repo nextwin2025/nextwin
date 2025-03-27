@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server"
-import { PrismaClient } from "@prisma/client"
-
-const prisma = new PrismaClient()
+import { prisma } from "@/lib/db"
+import { handleDatabaseError } from "@/lib/db"
 
 export async function GET() {
   try {
@@ -29,13 +28,15 @@ export async function GET() {
     })
   } catch (error) {
     console.error("Database health check failed:", error)
+    const { statusCode, message } = handleDatabaseError(error)
+    
     return NextResponse.json(
       {
         status: "unhealthy",
         timestamp: new Date().toISOString(),
-        error: "Database health check failed",
+        error: message,
       },
-      { status: 503 }
+      { status: statusCode }
     )
   }
 } 
