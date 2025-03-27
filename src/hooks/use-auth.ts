@@ -43,7 +43,11 @@ export function useAuth() {
 
         router.push("/dashboard")
       } catch (error) {
-        trackError(error)
+        if (error instanceof Error) {
+          trackError(error)
+        } else {
+          trackError(new Error(String(error)))
+        }
         throw error
       }
     },
@@ -55,7 +59,11 @@ export function useAuth() {
       await signOut({ redirect: false })
       router.push("/")
     } catch (error) {
-      trackError(error)
+      if (error instanceof Error) {
+        trackError(error)
+      } else {
+        trackError(new Error(String(error)))
+      }
       throw error
     }
   }, [router])
