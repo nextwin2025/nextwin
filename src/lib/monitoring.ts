@@ -1,8 +1,6 @@
 import * as Sentry from '@sentry/nextjs'
-import { Analytics } from '@vercel/analytics/react'
-import { SpeedInsights } from '@vercel/speed-insights/next'
 import { config } from "./config"
-import type { ReactNode } from 'react'
+import { MonitoringComponents } from '@/components/monitoring'
 
 // Initialize Sentry
 if (config.monitoring.sentry.dsn) {
@@ -27,14 +25,7 @@ if (config.monitoring.logrocket.appId) {
 }
 
 // Export monitoring components
-export function MonitoringComponents(): ReactNode {
-  return (
-    <>
-      <Analytics />
-      <SpeedInsights />
-    </>
-  )
-}
+export { MonitoringComponents }
 
 // Error tracking with context
 export const trackError = (error: Error, context?: Record<string, any>) => {
