@@ -84,14 +84,25 @@ export const trackPerformance = async <T>(
   }
 }
 
-// User tracking
-export const trackUser = (userId: string, traits?: Record<string, any>) => {
+// User context management
+export const setUserContext = (userId: string, traits?: Record<string, any>) => {
   if (config.monitoring.sentry.dsn) {
     Sentry.setUser({
       id: userId,
       ...traits,
     })
   }
+}
+
+export const clearUserContext = () => {
+  if (config.monitoring.sentry.dsn) {
+    Sentry.setUser(null)
+  }
+}
+
+// User tracking
+export const trackUser = (userId: string, traits?: Record<string, any>) => {
+  setUserContext(userId, traits)
 }
 
 // Custom analytics tracking
@@ -109,11 +120,6 @@ export const trackEvent = (
   } else {
     console.log("Event:", name, properties)
   }
-}
-
-// Clear user context
-export const clearUserContext = () => {
-  Sentry.setUser(null)
 }
 
 // Custom error class for application errors
