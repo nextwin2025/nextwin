@@ -8,6 +8,16 @@ const Form = FormPrimitive.Root
 
 const FormField = FormPrimitive.Field
 
+const FormItem = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => {
+  return (
+    <div ref={ref} className={cn("space-y-2", className)} {...props} />
+  )
+})
+FormItem.displayName = "FormItem"
+
 const FormLabel = React.forwardRef<
   React.ElementRef<typeof FormPrimitive.Label>,
   React.ComponentPropsWithoutRef<typeof FormPrimitive.Label>
@@ -38,9 +48,27 @@ const FormControl = React.forwardRef<
 ))
 FormControl.displayName = FormPrimitive.Control.displayName
 
+const FormMessage = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLParagraphElement>
+>(({ className, children, ...props }, ref) => {
+  return (
+    <p
+      ref={ref}
+      className={cn("text-sm font-medium text-destructive", className)}
+      {...props}
+    >
+      {children}
+    </p>
+  )
+})
+FormMessage.displayName = "FormMessage"
+
 export {
   Form,
   FormField,
+  FormItem,
   FormLabel,
   FormControl,
+  FormMessage,
 } 
